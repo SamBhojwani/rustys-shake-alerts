@@ -1,0 +1,23 @@
+{
+  "app": "python3 app.py",
+  "watch": {
+    "include": ["**"],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "requirements*.txt",
+      "**/__pycache__",
+      "tests",
+      "frontend"
+    ]
+  },
+  "context": {
+    "player_id": "8475825",
+    "player_name": "Bryan Rust",
+    "team_abbrev": "PIT",
+    "include_playoffs": false,
+    "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
+    "@aws-cdk/core:checkSecretUsage": true,
+    "@aws-cdk/core:target-partitions": ["aws"]
+  }
+}

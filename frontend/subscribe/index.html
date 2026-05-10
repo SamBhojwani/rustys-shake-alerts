@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rusty's Shake Goal Alerts — Subscribe</title>
+  <meta name="description" content="Get notified every time Bryan Rust scores a goal. Half-price Rusty's Shake at The Milkshake Factory!">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --gold: #FCB514;
+      --gold-dark: #CDA347;
+      --bg-dark: #0d1117;
+      --bg-card: #161b22;
+      --bg-input: #0d1117;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --border: #30363d;
+      --error: #f85149;
+      --success: #3fb950;
+      --radius: 12px;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(252, 181, 20, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(252, 181, 20, 0.04) 0%, transparent 50%);
+    }
+
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      max-width: 480px;
+      width: 100%;
+      overflow: hidden;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      padding: 36px 28px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .header h1 {
+      color: #000;
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.2;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header p {
+      color: rgba(0, 0, 0, 0.7);
+      font-size: 15px;
+      font-weight: 500;
+      margin-top: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .body-content {
+      padding: 32px 28px;
+    }
+
+    .body-content .intro {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+      text-align: center;
+    }
+
+    .body-content .intro strong {
+      color: var(--gold);
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-group input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(252, 181, 20, 0.15);
+    }
+
+    .form-group input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      border: none;
+      border-radius: var(--radius);
+      color: #000;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      letter-spacing: 0.02em;
+      margin-top: 6px;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(252, 181, 20, 0.3);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .message {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      line-height: 1.5;
+      display: none;
+      text-align: center;
+    }
+
+    .message.success {
+      display: block;
+      background: rgba(63, 185, 80, 0.1);
+      border: 1px solid rgba(63, 185, 80, 0.3);
+      color: var(--success);
+    }
+
+    .message.error {
+      display: block;
+      background: rgba(248, 81, 73, 0.1);
+      border: 1px solid rgba(248, 81, 73, 0.3);
+      color: var(--error);
+    }
+
+    .footer {
+      padding: 20px 28px;
+      background-color: rgba(0, 0, 0, 0.2);
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer p {
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 520px) {
+      body { padding: 12px; }
+      .header { padding: 28px 20px; }
+      .header h1 { font-size: 22px; }
+      .body-content { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>&#x1F3D2; Rusty&rsquo;s Shake Alerts</h1>
+      <p>Never miss a half-price shake day!</p>
+    </div>
+
+    <div class="body-content">
+      <p class="intro">
+        Every time <strong>Bryan Rust</strong> scores a goal, we&rsquo;ll email you
+        so you can grab a half-price <strong>Rusty&rsquo;s Shake</strong>
+        at The Milkshake Factory. &#x1F964;
+      </p>
+
+      <form id="subscribe-form" novalidate>
+        <div class="form-group">
+          <label for="name-input">Your Name</label>
+          <input type="text" id="name-input" name="name"
+                 placeholder="e.g. Sidney" required
+                 maxlength="100" autocomplete="given-name">
+        </div>
+
+        <div class="form-group">
+          <label for="email-input">Email Address</label>
+          <input type="email" id="email-input" name="email"
+                 placeholder="you@example.com" required
+                 maxlength="254" autocomplete="email">
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">
+          &#x1F514; Subscribe to Goal Alerts
+        </button>
+
+        <div class="message" id="message" role="alert" aria-live="polite"></div>
+      </form>
+    </div>
+
+    <div class="footer">
+      <p>
+        We&rsquo;ll send a confirmation email to verify your address.
+        <br>No spam, ever. Unsubscribe anytime.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ── CONFIGURE: Set this to your API Gateway URL after first deploy ──
+      var API_URL = '';
+      // Example: 'https://abc123.execute-api.us-east-1.amazonaws.com'
+
+      var form = document.getElementById('subscribe-form');
+      var nameInput = document.getElementById('name-input');
+      var emailInput = document.getElementById('email-input');
+      var submitBtn = document.getElementById('submit-btn');
+      var messageEl = document.getElementById('message');
+
+      // Simple email validation (matches server-side pattern)
+      var EMAIL_RE = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+      function showMessage(type, text) {
+        messageEl.className = 'message ' + type;
+        messageEl.textContent = text;
+      }
+
+      function clearMessage() {
+        messageEl.className = 'message';
+        messageEl.textContent = '';
+      }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearMessage();
+
+        var name = nameInput.value.trim();
+        var email = emailInput.value.trim().toLowerCase();
+
+        // Client-side validation
+        if (!name || name.length > 100) {
+          showMessage('error', 'Please enter your name (max 100 characters).');
+          nameInput.focus();
+          return;
+        }
+
+        if (!email || !EMAIL_RE.test(email) || email.length > 254) {
+          showMessage('error', 'Please enter a valid email address.');
+          emailInput.focus();
+          return;
+        }
+
+        if (!API_URL) {
+          showMessage('error', 'Subscription is not yet configured. Please check back later.');
+          return;
+        }
+
+        // Disable button during request
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Subscribing\u2026';
+
+        fetch(API_URL.replace(/\/+$/, '') + '/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, email: email })
+        })
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            if (data.error) {
+              showMessage('error', data.error);
+            } else {
+              showMessage('success', 'Check your inbox! We sent a confirmation link to verify your email.');
+              form.reset();
+            }
+          })
+          .catch(function () {
+            showMessage('error', 'Something went wrong. Please try again later.');
+          })
+          .finally(function () {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '\uD83D\uDD14 Subscribe to Goal Alerts';
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

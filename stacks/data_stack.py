@@ -26,6 +26,8 @@ class DataStack(Stack):
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             removal_policy=RemovalPolicy.RETAIN,
+            deletion_protection=True,
+            encryption=dynamodb.TableEncryption.AWS_MANAGED,
             point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
                 point_in_time_recovery_enabled=True,
             ),
@@ -36,6 +38,16 @@ class DataStack(Stack):
             index_name="status-index",
             partition_key=dynamodb.Attribute(
                 name="status",
+                type=dynamodb.AttributeType.STRING,
+            ),
+            projection_type=dynamodb.ProjectionType.ALL,
+        )
+
+        # GSI: look up subscribers by confirmation_token (for unsubscribe)
+        self.subscribers_table.add_global_secondary_index(
+            index_name="token-index",
+            partition_key=dynamodb.Attribute(
+                name="confirmation_token",
                 type=dynamodb.AttributeType.STRING,
             ),
             projection_type=dynamodb.ProjectionType.ALL,
@@ -52,6 +64,11 @@ class DataStack(Stack):
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             removal_policy=RemovalPolicy.RETAIN,
+            deletion_protection=True,
+            encryption=dynamodb.TableEncryption.AWS_MANAGED,
+            point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
+                point_in_time_recovery_enabled=True,
+            ),
         )
 
         # ── Outputs ───────────────────────────────────────────────────

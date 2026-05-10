@@ -27,10 +27,36 @@ SUBSCRIBERS_TABLE = os.environ.get("SUBSCRIBERS_TABLE", "rusty-subscribers")
 GOAL_HISTORY_TABLE = os.environ.get("GOAL_HISTORY_TABLE", "rusty-goal-history")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "")
 INCLUDE_PLAYOFFS = os.environ.get("INCLUDE_PLAYOFFS", "false").lower() == "true"
+SES_CONFIG_SET = os.environ.get("SES_CONFIG_SET", "")
+API_BASE_URL = os.environ.get("API_BASE_URL", "")
 
 # ── AWS Clients ───────────────────────────────────────────────────────
 dynamodb = boto3.resource("dynamodb")
 ses_client = boto3.client("ses")
+
+# ── Template Cache ────────────────────────────────────────────────────
+_GOAL_EMAIL_TEMPLATE = None
+
+
+def _load_email_template() -> str:
+    """Load the goal email HTML template (cached after first call)."""
+    global _GOAL_EMAIL_TEMPLATE
+    if _GOAL_EMAIL_TEMPLATE is None:
+        template_path = os.path.join(
+            os.path.dirname(__file__), "templates", "goal_email.html"
+        )
+        with open(template_path, "r", encoding="utf-8") as f:
+            _GOAL_EMAIL_TEMPLATE = f.read()
+    return _GOAL_EMAIL_TEMPLATE
+
+
+def _mask_email(email: str) -> str:
+    """Mask email for safe logging: 'test@example.com' → 'tes***@example.com'."""
+    if "@" not in email:
+        return "***"
+    local, domain = email.rsplit("@", 1)
+    masked_local = local[:3] + "***" if len(local) > 3 else local[0] + "***"
+    return f"{masked_local}@{domain}"
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -40,7 +66,7 @@ ses_client = boto3.client("ses")
 
 def lambda_handler(event, context):
     """Main entry point — triggered by EventBridge daily."""
-    logger.info(f"Goal Checker invoked. Event: {json.dumps(event)}")
+    logger.info(f"Goal Checker invoked. Source: {event.get('source', 'manual')}")
 
     yesterday = _get_yesterday_et()
     logger.info(f"Checking for goals on: {yesterday.isoformat()}")
@@ -187,13 +213,15 @@ def _send_goal_emails(subscribers: list[dict], game_info: dict) -> int:
         email = subscriber["email"]
         token = subscriber.get("confirmation_token", "")
 
+        unsubscribe_url = _build_unsubscribe_url(token)
+
         body_html = _build_email_html(
             name=name,
             goals=goals,
             goal_word=goal_word,
             opponent=opponent,
             game_date=game_date,
-            unsubscribe_token=token,
+            unsubscribe_url=unsubscribe_url,
         )
         body_text = (
             f"Hi {name}!\n\n"
@@ -201,26 +229,41 @@ def _send_goal_emails(subscribers: list[dict], game_info: dict) -> int:
             f"against {opponent} on {game_date}!\n\n"
             f"Head to The Milkshake Factory today for a half-price "
             f"Rusty's Shake!\n\n"
-            f"Go Pens! \U0001f427"
+            f"Go Pens! \U0001f427\n\n"
+            f"Unsubscribe: {unsubscribe_url}"
         )
 
         try:
-            ses_client.send_email(
-                Source=SENDER_EMAIL,
-                Destination={"ToAddresses": [email]},
-                Message={
+            send_kwargs = {
+                "Source": SENDER_EMAIL,
+                "Destination": {"ToAddresses": [email]},
+                "Message": {
                     "Subject": {"Data": subject, "Charset": "UTF-8"},
                     "Body": {
                         "Html": {"Data": body_html, "Charset": "UTF-8"},
                         "Text": {"Data": body_text, "Charset": "UTF-8"},
                     },
                 },
-            )
+            }
+
+            # Attach SES configuration set for bounce/complaint tracking
+            if SES_CONFIG_SET:
+                send_kwargs["ConfigurationSetName"] = SES_CONFIG_SET
+
+            ses_client.send_email(**send_kwargs)
             sent_count += 1
         except Exception:
-            logger.exception(f"Failed to send email to {email}")
+            logger.exception(f"Failed to send email to {_mask_email(email)}")
 
     return sent_count
+
+
+def _build_unsubscribe_url(token: str) -> str:
+    """Build the unsubscribe URL for a subscriber."""
+    if API_BASE_URL:
+        base = API_BASE_URL.rstrip("/")
+        return f"{base}/unsubscribe?token={token}"
+    return f"#unsubscribe?token={token}"
 
 
 def _build_email_html(
@@ -229,90 +272,30 @@ def _build_email_html(
     goal_word: str,
     opponent: str,
     game_date: str,
-    unsubscribe_token: str,
+    unsubscribe_url: str,
 ) -> str:
-    """Build the HTML email body for a goal alert.
+    """Build the HTML email body from the external template.
 
-    Uses Penguins gold (#FCB514) + dark theme for on-brand styling.
-    The email is inline-styled for maximum email client compatibility.
+    Falls back to a minimal inline template if the file can't be loaded.
     """
-    # TODO Phase 2: Load from templates/goal_email.html instead
-    unsubscribe_url = f"#unsubscribe?token={unsubscribe_token}"
-
-    return f"""\
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rusty's Shake Alert</title>
-</head>
-<body style="margin:0; padding:0; background-color:#1a1a2e; font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-         style="background-color:#1a1a2e; padding:20px 0;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0"
-               style="background-color:#16213e; border-radius:12px; overflow:hidden; max-width:600px; width:100%;">
-          <!-- HEADER -->
-          <tr>
-            <td style="background:linear-gradient(135deg,#FCB514,#CDA347); padding:32px 24px; text-align:center;">
-              <h1 style="margin:0; color:#000; font-size:28px; line-height:1.2;">
-                \U0001f3d2 GOAL ALERT!
-              </h1>
-              <p style="margin:10px 0 0; color:#000; font-size:17px; font-weight:bold;">
-                {PLAYER_NAME} scored {goals} {goal_word}!
-              </p>
-            </td>
-          </tr>
-          <!-- BODY -->
-          <tr>
-            <td style="padding:32px 28px; color:#e0e0e0;">
-              <p style="font-size:18px; margin:0 0 16px;">Hi {name}! \U0001f44b</p>
-              <p style="font-size:16px; margin:0 0 16px; line-height:1.6;">
-                Great news! <strong>{PLAYER_NAME}</strong> lit the lamp with
-                <strong style="color:#FCB514;">{goals} {goal_word}</strong>
-                against <strong>{opponent}</strong> on {game_date}!
-              </p>
-              <p style="font-size:16px; margin:0 0 28px; line-height:1.6;">
-                That means today is <strong style="color:#FCB514;">Rusty&rsquo;s Shake Day</strong>
-                at The Milkshake Factory! \U0001f389
-              </p>
-              <!-- CTA -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center">
-                    <a href="https://themilkshakefactory.com" target="_blank"
-                       style="display:inline-block; background:#FCB514; color:#000;
-                              padding:16px 44px; text-decoration:none; font-size:18px;
-                              font-weight:bold; border-radius:8px; letter-spacing:0.3px;">
-                      \U0001f964 Get Half-Price Rusty&rsquo;s Shake!
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              <p style="font-size:14px; margin:28px 0 0; color:#888; text-align:center;">
-                Let&rsquo;s Go Pens! \U0001f427
-              </p>
-            </td>
-          </tr>
-          <!-- FOOTER -->
-          <tr>
-            <td style="padding:20px 28px; background-color:#0f1629; text-align:center;
-                        border-top:1px solid #2a2a4a;">
-              <p style="margin:0; color:#666; font-size:12px; line-height:1.5;">
-                You&rsquo;re receiving this because you subscribed to Rusty&rsquo;s Shake goal alerts.
-              </p>
-              <p style="margin:8px 0 0; font-size:12px;">
-                <a href="{unsubscribe_url}" style="color:#FCB514; text-decoration:underline;">
-                  Unsubscribe
-                </a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
+    try:
+        template = _load_email_template()
+        return template.format(
+            name=name,
+            player_name=PLAYER_NAME,
+            goals=goals,
+            goal_word=goal_word,
+            opponent=opponent,
+            game_date=game_date,
+            unsubscribe_url=unsubscribe_url,
+        )
+    except Exception:
+        logger.exception("Failed to load email template, using fallback")
+        # Minimal fallback — ensures emails still go out even if
+        # the template file is missing or malformed
+        return (
+            f"<h1>{PLAYER_NAME} scored {goals} {goal_word}!</h1>"
+            f"<p>Hi {name}! Head to The Milkshake Factory for a "
+            f"half-price Rusty's Shake!</p>"
+            f"<p><a href=\"{unsubscribe_url}\">Unsubscribe</a></p>"
+        )

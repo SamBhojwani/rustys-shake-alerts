@@ -4,6 +4,7 @@ from aws_cdk import (
     Stack,
     Duration,
     CfnOutput,
+    RemovalPolicy,
     aws_ses as ses,
     aws_sns as sns,
     aws_sns_subscriptions as subs,
@@ -11,6 +12,7 @@ from aws_cdk import (
     aws_dynamodb as dynamodb,
     aws_logs as logs,
     aws_kms as kms,
+    aws_iam as iam,
 )
 from constructs import Construct
 
@@ -36,15 +38,56 @@ class EmailStack(Stack):
             identity=ses.Identity.email("bryanrusties@gmail.com"),
         )
 
+        # ── KMS CMK for SNS Topic Encryption ─────────────────────────
+        # SES cannot publish to topics encrypted with the AWS-managed
+        # alias/aws/sns key (no permission on AWS-managed keys). A
+        # customer-managed key with an explicit grant for ses.amazonaws.com
+        # is required.
+        sns_key = kms.Key(
+            self,
+            "SnsTopicKey",
+            description="CMK for Rusty SES bounce/complaint SNS topic",
+            enable_key_rotation=True,
+            removal_policy=RemovalPolicy.DESTROY,
+        )
+        sns_key.add_to_resource_policy(
+            iam.PolicyStatement(
+                sid="AllowSESToUseKey",
+                effect=iam.Effect.ALLOW,
+                principals=[iam.ServicePrincipal("ses.amazonaws.com")],
+                actions=["kms:GenerateDataKey*", "kms:Decrypt"],
+                resources=["*"],
+                conditions={
+                    "StringEquals": {
+                        "aws:SourceAccount": self.account,
+                    },
+                },
+            )
+        )
+
         # ── SNS Topic for Bounce/Complaint Notifications ─────────────
         self.notification_topic = sns.Topic(
             self,
             "SESNotificationTopic",
             topic_name="rusty-ses-notifications",
             display_name="Rusty's Shake SES Notifications",
-            master_key=kms.Alias.from_alias_name(
-                self, "SnsKmsKey", "alias/aws/sns"
-            ),
+            master_key=sns_key,
+        )
+
+        # SES service must also be allowed to publish to the topic.
+        self.notification_topic.add_to_resource_policy(
+            iam.PolicyStatement(
+                sid="AllowSESToPublish",
+                effect=iam.Effect.ALLOW,
+                principals=[iam.ServicePrincipal("ses.amazonaws.com")],
+                actions=["sns:Publish"],
+                resources=[self.notification_topic.topic_arn],
+                conditions={
+                    "StringEquals": {
+                        "aws:SourceAccount": self.account,
+                    },
+                },
+            )
         )
 
         # Wire SES notifications to the SNS topic

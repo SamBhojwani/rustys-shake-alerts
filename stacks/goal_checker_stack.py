@@ -121,7 +121,9 @@ class GoalCheckerStack(Stack):
                 "SUBSCRIBERS_TABLE": subscribers_table.table_name,
             },
             log_retention=logs.RetentionDays.ONE_MONTH,
-            reserved_concurrent_executions=10,  # Prevent cost bombs from floods
+            # reserved_concurrent_executions intentionally omitted: account
+            # has only 10 total concurrency, AWS requires 10 unreserved.
+            # Re-add per-function caps after a Service Quotas increase.
         )
 
         # Grant unsubscribe Lambda access to subscribers table
@@ -141,11 +143,12 @@ class GoalCheckerStack(Stack):
                 "SUBSCRIBERS_TABLE": subscribers_table.table_name,
                 "SENDER_EMAIL": sender_email,
                 "SES_CONFIG_SET": config_set_name,
-                "API_BASE_URL": "",  # Set after first deploy from ApiUrl output
+                # API_BASE_URL is wired below via add_environment, after
+                # the HttpApi construct exists.
                 "TOKEN_EXPIRY_HOURS": "24",
             },
             log_retention=logs.RetentionDays.ONE_MONTH,
-            reserved_concurrent_executions=10,  # Prevent cost bombs from floods
+            # See note on UnsubscribeFunction; re-add after quota increase.
         )
 
         subscribers_table.grant_read_write_data(subscribe_fn)
@@ -177,7 +180,7 @@ class GoalCheckerStack(Stack):
                 "SUBSCRIBERS_TABLE": subscribers_table.table_name,
             },
             log_retention=logs.RetentionDays.ONE_MONTH,
-            reserved_concurrent_executions=10,  # Prevent cost bombs from floods
+            # See note on UnsubscribeFunction; re-add after quota increase.
         )
 
         subscribers_table.grant_read_write_data(confirm_fn)
@@ -230,8 +233,11 @@ class GoalCheckerStack(Stack):
             description="Rusty's Shake public + admin API",
             cors_preflight=apigw.CorsPreflightOptions(
                 allow_origins=[
-                    "http://localhost:*",
-                    "http://127.0.0.1:*",
+                    "http://localhost:5173",
+                    "http://localhost:3000",
+                    "http://127.0.0.1:5173",
+                    "http://127.0.0.1:3000",
+                    "https://dysdanp2wbnf9.cloudfront.net",
                 ],
                 allow_methods=[
                     apigw.CorsHttpMethod.GET,
@@ -269,6 +275,12 @@ class GoalCheckerStack(Stack):
             '"method":"$context.httpMethod","path":"$context.path",'
             '"status":"$context.status","latency":"$context.responseLatency",'
             '"userAgent":"$context.identity.userAgent"}',
+        )
+
+        # Wire the API URL into the Subscribe Lambda so confirmation
+        # emails contain valid links. Resolved at deploy time.
+        subscribe_fn.add_environment(
+            "API_BASE_URL", self.http_api.url or ""
         )
 
         # ── Public Routes (no auth) ───────────────────────────────────

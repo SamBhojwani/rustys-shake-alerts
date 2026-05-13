@@ -85,43 +85,65 @@
       -moz-osx-font-smoothing: grayscale;
     }
 
-    /* ── Theme toggle ───────────────────────────────────────────── */
+    /* ── Theme switch (sun ↔ moon) ──────────────────────────────── */
     .theme-toggle-wrap {
       position: absolute;
       top: 20px;
       right: 24px;
     }
 
-    .theme-toggle {
+    .theme-switch {
+      position: relative;
       display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 56px;
+      height: 28px;
+      padding: 0 7px;
       background: transparent;
       border: 1px solid var(--border);
       border-radius: 999px;
-      padding: 3px;
-    }
-
-    .theme-toggle button {
-      background: transparent;
-      border: none;
-      padding: 5px 12px;
-      font-family: inherit;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      color: var(--text-muted);
-      border-radius: 999px;
       cursor: pointer;
-      transition: background 0.15s, color 0.15s;
+      color: var(--text-faint);
+      transition: border-color 0.15s;
+      outline: none;
     }
 
-    .theme-toggle button:hover {
-      color: var(--text);
+    .theme-switch:hover { border-color: var(--border-strong); }
+
+    .theme-switch:focus-visible {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(252, 181, 20, 0.18);
     }
 
-    .theme-toggle button.on {
+    .theme-switch .icon {
+      width: 14px;
+      height: 14px;
+      display: block;
+      position: relative;
+      z-index: 2;
+      transition: color 0.18s;
+    }
+
+    .theme-switch .thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
       background: var(--accent);
-      color: var(--on-accent);
+      border-radius: 50%;
+      transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1;
     }
+
+    .theme-switch[aria-checked="false"] .thumb { transform: translateX(0); }
+    .theme-switch[aria-checked="false"] .icon-sun { color: var(--on-accent); }
+    .theme-switch[aria-checked="false"] .icon-moon { color: var(--text-faint); }
+
+    .theme-switch[aria-checked="true"] .thumb { transform: translateX(26px); }
+    .theme-switch[aria-checked="true"] .icon-sun { color: var(--text-faint); }
+    .theme-switch[aria-checked="true"] .icon-moon { color: var(--on-accent); }
 
     /* ── Card ───────────────────────────────────────────────────── */
     .card {
@@ -276,11 +298,22 @@
 </head>
 <body>
   <div class="theme-toggle-wrap">
-    <div class="theme-toggle" role="group" aria-label="Color theme">
-      <button type="button" data-theme-set="system">Auto</button>
-      <button type="button" data-theme-set="light">Light</button>
-      <button type="button" data-theme-set="dark">Dark</button>
-    </div>
+    <button
+      type="button"
+      role="switch"
+      class="theme-switch"
+      id="theme-switch"
+      aria-checked="false"
+      aria-label="Toggle theme">
+      <svg class="icon icon-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+        <circle cx="8" cy="8" r="2.6" />
+        <path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1" />
+      </svg>
+      <svg class="icon icon-moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true">
+        <path d="M13.2 9.3a5.6 5.6 0 1 1-6.5-7 4.5 4.5 0 0 0 6.5 7z" />
+      </svg>
+      <span class="thumb" aria-hidden="true"></span>
+    </button>
   </div>
 
   <div class="card">
@@ -394,36 +427,47 @@
           });
       });
 
-      // ── Theme toggle ───────────────────────────────────────────
+      // ── Theme switch (sun ↔ moon) ──────────────────────────────
       var STORAGE_KEY = 'rusty.theme';
       var html = document.documentElement;
+      var themeSwitch = document.getElementById('theme-switch');
+      var mql = window.matchMedia('(prefers-color-scheme: dark)');
+
+      function readStored() {
+        try {
+          var v = localStorage.getItem(STORAGE_KEY);
+          if (v === 'light' || v === 'dark') return v;
+        } catch (e) { /* ignore */ }
+        return null;
+      }
 
       function applyTheme(mode) {
-        if (mode === 'system') {
-          html.removeAttribute('data-theme');
-        } else {
+        // mode === null means: follow OS preference via CSS
+        if (mode === 'dark' || mode === 'light') {
           html.setAttribute('data-theme', mode);
+        } else {
+          html.removeAttribute('data-theme');
         }
-        var buttons = document.querySelectorAll('[data-theme-set]');
-        for (var i = 0; i < buttons.length; i++) {
-          buttons[i].classList.toggle('on', buttons[i].getAttribute('data-theme-set') === mode);
-        }
+        var isDark = mode === 'dark' || (mode === null && mql.matches);
+        themeSwitch.setAttribute('aria-checked', isDark ? 'true' : 'false');
+        themeSwitch.setAttribute(
+          'aria-label',
+          isDark ? 'Switch to light mode' : 'Switch to dark mode'
+        );
       }
 
-      var saved;
-      try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) { saved = null; }
-      if (saved !== 'light' && saved !== 'dark' && saved !== 'system') saved = 'system';
+      themeSwitch.addEventListener('click', function () {
+        var next = themeSwitch.getAttribute('aria-checked') === 'true' ? 'light' : 'dark';
+        try { localStorage.setItem(STORAGE_KEY, next); } catch (e) { /* ignore */ }
+        applyTheme(next);
+      });
 
-      var togglerButtons = document.querySelectorAll('[data-theme-set]');
-      for (var j = 0; j < togglerButtons.length; j++) {
-        togglerButtons[j].addEventListener('click', function (e) {
-          var mode = e.currentTarget.getAttribute('data-theme-set');
-          try { localStorage.setItem(STORAGE_KEY, mode); } catch (err) { /* ignore */ }
-          applyTheme(mode);
-        });
-      }
+      // Follow OS changes as long as user hasn't picked explicitly.
+      mql.addEventListener('change', function () {
+        if (readStored() === null) applyTheme(null);
+      });
 
-      applyTheme(saved);
+      applyTheme(readStored());
     })();
   </script>
 </body>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { login, completeNewPassword } from '../auth';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function Login({ onSuccess }) {
   const [email, setEmail] = useState('');
@@ -60,26 +61,27 @@ export default function Login({ onSuccess }) {
   if (challengeUser) {
     return (
       <div className="login-page">
+        <div className="theme-toggle-wrap"><ThemeToggle /></div>
         <div className="login-card">
-          <div className="login-header">
-            <h1>🔒 Set New Password</h1>
-            <p>Your temporary password has expired</p>
-          </div>
-          <form className="login-body" onSubmit={handleNewPassword}>
+          <div className="mark">Set new password</div>
+          <h1 className="headline">One quick step.</h1>
+          <p className="login-sub">Your temporary password needs to be replaced before you can continue.</p>
+
+          <form onSubmit={handleNewPassword}>
             <div className="form-group">
-              <label htmlFor="new-password">New Password</label>
+              <label htmlFor="new-password">New password</label>
               <input
                 id="new-password"
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Min 8 chars, mixed case + number + symbol"
+                placeholder="Min 8 characters"
                 required
                 autoComplete="new-password"
               />
             </div>
             <div className="form-group">
-              <label htmlFor="confirm-password">Confirm Password</label>
+              <label htmlFor="confirm-password">Confirm password</label>
               <input
                 id="confirm-password"
                 type="password"
@@ -90,8 +92,13 @@ export default function Login({ onSuccess }) {
                 autoComplete="new-password"
               />
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-              {loading ? 'Setting…' : 'Set Password & Login'}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={{ width: '100%', marginTop: 6 }}
+              disabled={loading}
+            >
+              {loading ? 'Setting…' : 'Set password & sign in'}
             </button>
             {error && <p className="error-msg">{error}</p>}
           </form>
@@ -103,12 +110,13 @@ export default function Login({ onSuccess }) {
   // Login screen
   return (
     <div className="login-page">
+      <div className="theme-toggle-wrap"><ThemeToggle /></div>
       <div className="login-card">
-        <div className="login-header">
-          <h1>🏒 Rusty's Shake</h1>
-          <p>Admin Dashboard</p>
-        </div>
-        <form className="login-body" onSubmit={handleLogin}>
+        <div className="mark">Rusty's Shake · Admin</div>
+        <h1 className="headline">Sign in.</h1>
+        <p className="login-sub">Manage subscribers, view recent goals, and send a test alert.</p>
+
+        <form onSubmit={handleLogin}>
           <div className="form-group">
             <label htmlFor="login-email">Email</label>
             <input
@@ -133,8 +141,13 @@ export default function Login({ onSuccess }) {
               autoComplete="current-password"
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-            {loading ? 'Logging in…' : 'Login'}
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ width: '100%', marginTop: 6 }}
+            disabled={loading}
+          >
+            {loading ? 'Signing in…' : 'Sign in'}
           </button>
           {error && <p className="error-msg">{error}</p>}
         </form>

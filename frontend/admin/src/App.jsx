@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Subscribers from './pages/Subscribers';
 import Goals from './pages/Goals';
 import Tools from './pages/Tools';
+import ThemeToggle from './components/ThemeToggle';
 
 const PAGES = {
   dashboard: { label: 'Dashboard', icon: '📊', component: Dashboard },
@@ -64,8 +65,9 @@ export default function App() {
     <>
       <nav className="sidebar">
         <div className="sidebar-logo">
-          <h1>🏒 Rusty's Shake</h1>
-          <p>Admin Dashboard</p>
+          <div className="mark">Rusty's Shake</div>
+          <h1>Admin</h1>
+          <p>Goal alerts dashboard</p>
         </div>
         <div className="sidebar-nav">
           {Object.entries(PAGES).map(([key, { label, icon }]) => (
@@ -86,6 +88,7 @@ export default function App() {
           </button>
         </div>
         <div className="sidebar-footer">
+          <ThemeToggle />
           <div className="admin-email">{adminEmail}</div>
         </div>
       </nav>

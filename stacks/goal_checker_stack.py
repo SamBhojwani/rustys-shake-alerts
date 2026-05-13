@@ -75,19 +75,20 @@ class GoalCheckerStack(Stack):
         subscribers_table.grant_read_data(self.goal_checker_fn)
         goal_history_table.grant_read_write_data(self.goal_checker_fn)
 
-        # SES send permission — scoped to the verified sender identity only
-        ses_identity_arn = Fn.sub(
-            "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/"
-            + sender_email
-        ) if sender_email else "*"
-
+        # SES send permission. SES authorization in sandbox mode evaluates
+        # against both sender and recipient identity ARNs, so the policy
+        # must cover any identity in the account. Also include the
+        # configuration set ARN for ConfigurationSetName usage.
         self.goal_checker_fn.add_to_role_policy(
             iam.PolicyStatement(
                 actions=[
                     "ses:SendEmail",
                     "ses:SendRawEmail",
                 ],
-                resources=[ses_identity_arn],
+                resources=[
+                    f"arn:aws:ses:{self.region}:{self.account}:identity/*",
+                    f"arn:aws:ses:{self.region}:{self.account}:configuration-set/*",
+                ],
             )
         )
 
@@ -153,16 +154,20 @@ class GoalCheckerStack(Stack):
 
         subscribers_table.grant_read_write_data(subscribe_fn)
 
-        # Scoped SES permission for subscribe Lambda
+        # SES permission for subscribe Lambda.
+        # SES SendEmail authorization in sandbox mode evaluates against
+        # both the sender (Source) and recipient (To) identity ARNs,
+        # so the policy must cover any identity in the account — scoping
+        # to the sender alone breaks for unverified recipients. Also
+        # include the configuration set ARN for ConfigurationSetName.
         if sender_email:
-            subscribe_ses_arn = Fn.sub(
-                "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/"
-                + sender_email
-            )
             subscribe_fn.add_to_role_policy(
                 iam.PolicyStatement(
                     actions=["ses:SendEmail"],
-                    resources=[subscribe_ses_arn],
+                    resources=[
+                        f"arn:aws:ses:{self.region}:{self.account}:identity/*",
+                        f"arn:aws:ses:{self.region}:{self.account}:configuration-set/*",
+                    ],
                 )
             )
 
@@ -209,16 +214,17 @@ class GoalCheckerStack(Stack):
         subscribers_table.grant_read_write_data(admin_fn)
         goal_history_table.grant_read_data(admin_fn)
 
-        # SES send permission (for test emails)
+        # SES send permission (for /admin/test-email).
+        # Broadened to any identity in this account — see notes on the
+        # other SES policies above for why sandbox mode requires this.
         if sender_email:
-            admin_ses_arn = Fn.sub(
-                "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/"
-                + sender_email
-            )
             admin_fn.add_to_role_policy(
                 iam.PolicyStatement(
                     actions=["ses:SendEmail"],
-                    resources=[admin_ses_arn],
+                    resources=[
+                        f"arn:aws:ses:{self.region}:{self.account}:identity/*",
+                        f"arn:aws:ses:{self.region}:{self.account}:configuration-set/*",
+                    ],
                 )
             )
 

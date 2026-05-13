@@ -7,173 +7,240 @@
   <meta name="description" content="Get notified every time Bryan Rust scores a goal. Half-price Rusty's Shake at The Milkshake Factory!">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,700;1,400;1,700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
+    /* ── Theme tokens ───────────────────────────────────────────── */
     :root {
-      --gold: #FCB514;
-      --gold-dark: #CDA347;
-      --bg-dark: #0d1117;
-      --bg-card: #161b22;
-      --bg-input: #0d1117;
-      --text: #e6edf3;
-      --text-muted: #8b949e;
-      --border: #30363d;
-      --error: #f85149;
-      --success: #3fb950;
-      --radius: 12px;
+      --bg: #fafaf7;
+      --surface: #ffffff;
+      --surface-input: #ffffff;
+      --text: #1a1a1a;
+      --text-muted: #5a5a5a;
+      --text-faint: #888;
+      --border: #e5e5e0;
+      --border-strong: #c8c8c0;
+      --accent: #FCB514;
+      --accent-strong: #b58804;
+      --on-accent: #1a1a1a;
+      --error: #d33b32;
+      --success: #2f8a47;
+      --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.08);
+      --radius: 6px;
+      --radius-lg: 10px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0a0a0a;
+        --surface: #141414;
+        --surface-input: #0a0a0a;
+        --text: #f5f5f5;
+        --text-muted: #a0a0a0;
+        --text-faint: #6a6a6a;
+        --border: #2a2a2a;
+        --border-strong: #3a3a3a;
+        --accent: #FCB514;
+        --accent-strong: #fdc736;
+        --on-accent: #0a0a0a;
+        --error: #ff6b62;
+        --success: #4cc16a;
+        --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.5);
+      }
+    }
+
+    [data-theme="dark"] {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --surface-input: #0a0a0a;
+      --text: #f5f5f5;
+      --text-muted: #a0a0a0;
+      --text-faint: #6a6a6a;
+      --border: #2a2a2a;
+      --border-strong: #3a3a3a;
+      --accent: #FCB514;
+      --accent-strong: #fdc736;
+      --on-accent: #0a0a0a;
+      --error: #ff6b62;
+      --success: #4cc16a;
+      --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.5);
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      transition: background-color 0.18s ease, color 0.18s ease;
     }
 
     body {
-      background-color: var(--bg-dark);
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-      background-image:
-        radial-gradient(ellipse at 20% 50%, rgba(252, 181, 20, 0.06) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 20%, rgba(252, 181, 20, 0.04) 0%, transparent 50%);
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    .card {
-      background-color: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      max-width: 480px;
-      width: 100%;
-      overflow: hidden;
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
-    }
-
-    .header {
-      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-      padding: 36px 28px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .header::after {
-      content: '';
+    /* ── Theme toggle ───────────────────────────────────────────── */
+    .theme-toggle-wrap {
       position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
-      pointer-events: none;
+      top: 20px;
+      right: 24px;
     }
 
-    .header h1 {
-      color: #000;
-      font-size: 26px;
-      font-weight: 800;
-      line-height: 1.2;
-      position: relative;
-      z-index: 1;
+    .theme-toggle {
+      display: inline-flex;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 3px;
     }
 
-    .header p {
-      color: rgba(0, 0, 0, 0.7);
-      font-size: 15px;
-      font-weight: 500;
-      margin-top: 8px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .body-content {
-      padding: 32px 28px;
-    }
-
-    .body-content .intro {
-      font-size: 15px;
-      line-height: 1.6;
+    .theme-toggle button {
+      background: transparent;
+      border: none;
+      padding: 5px 12px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
       color: var(--text-muted);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .theme-toggle button:hover {
+      color: var(--text);
+    }
+
+    .theme-toggle button.on {
+      background: var(--accent);
+      color: var(--on-accent);
+    }
+
+    /* ── Card ───────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 460px;
+      padding: 40px 36px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-strong);
+      margin-bottom: 22px;
+    }
+
+    .mark::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+
+    .headline {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      line-height: 1.1;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .headline em {
+      font-style: italic;
+      color: var(--accent-strong);
+    }
+
+    .intro {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.55;
       margin-bottom: 28px;
-      text-align: center;
     }
 
-    .body-content .intro strong {
-      color: var(--gold);
+    .intro strong {
+      color: var(--text);
+      font-weight: 600;
     }
 
+    /* ── Form ───────────────────────────────────────────────────── */
     .form-group {
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     .form-group label {
       display: block;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 500;
       color: var(--text);
       margin-bottom: 6px;
-      letter-spacing: 0.02em;
     }
 
     .form-group input {
       width: 100%;
-      padding: 12px 14px;
-      background: var(--bg-input);
+      padding: 11px 14px;
+      background: var(--surface-input);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       color: var(--text);
       font-family: inherit;
-      font-size: 15px;
+      font-size: 14px;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: border-color 0.18s;
     }
 
-    .form-group input:focus {
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(252, 181, 20, 0.15);
-    }
-
-    .form-group input::placeholder {
-      color: var(--text-muted);
-    }
+    .form-group input::placeholder { color: var(--text-faint); }
+    .form-group input:focus { border-color: var(--text); }
 
     .submit-btn {
       width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-      border: none;
+      padding: 13px;
+      background: var(--accent);
+      border: 1px solid var(--accent);
       border-radius: var(--radius);
-      color: #000;
+      color: var(--on-accent);
       font-family: inherit;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 700;
-      cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
       letter-spacing: 0.02em;
-      margin-top: 6px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.15s, border-color 0.15s;
     }
 
     .submit-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(252, 181, 20, 0.3);
-    }
-
-    .submit-btn:active {
-      transform: translateY(0);
+      background: var(--accent-strong);
+      border-color: var(--accent-strong);
     }
 
     .submit-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
     }
 
     .message {
       margin-top: 16px;
       padding: 12px 14px;
       border-radius: var(--radius);
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.5;
       display: none;
       text-align: center;
@@ -181,91 +248,83 @@
 
     .message.success {
       display: block;
-      background: rgba(63, 185, 80, 0.1);
-      border: 1px solid rgba(63, 185, 80, 0.3);
+      background: rgba(47, 138, 71, 0.10);
+      border: 1px solid rgba(47, 138, 71, 0.25);
       color: var(--success);
     }
 
     .message.error {
       display: block;
-      background: rgba(248, 81, 73, 0.1);
-      border: 1px solid rgba(248, 81, 73, 0.3);
+      background: rgba(211, 59, 50, 0.10);
+      border: 1px solid rgba(211, 59, 50, 0.25);
       color: var(--error);
     }
 
-    .footer {
-      padding: 20px 28px;
-      background-color: rgba(0, 0, 0, 0.2);
-      text-align: center;
-      border-top: 1px solid var(--border);
-    }
-
-    .footer p {
-      color: var(--text-muted);
+    .foot {
       font-size: 12px;
-      line-height: 1.5;
+      color: var(--text-faint);
+      margin-top: 20px;
+      text-align: center;
+      line-height: 1.55;
     }
 
     @media (max-width: 520px) {
-      body { padding: 12px; }
-      .header { padding: 28px 20px; }
-      .header h1 { font-size: 22px; }
-      .body-content { padding: 24px 20px; }
+      .card { padding: 32px 24px; }
+      .headline { font-size: 30px; }
     }
   </style>
 </head>
 <body>
+  <div class="theme-toggle-wrap">
+    <div class="theme-toggle" role="group" aria-label="Color theme">
+      <button type="button" data-theme-set="system">Auto</button>
+      <button type="button" data-theme-set="light">Light</button>
+      <button type="button" data-theme-set="dark">Dark</button>
+    </div>
+  </div>
+
   <div class="card">
-    <div class="header">
-      <h1>&#x1F3D2; Rusty&rsquo;s Shake Alerts</h1>
-      <p>Never miss a half-price shake day!</p>
-    </div>
+    <div class="mark">Rusty's Shake · Goal Alerts</div>
+    <h1 class="headline">Every goal,<br>a <em>shake</em>.</h1>
+    <p class="intro">
+      When <strong>Bryan Rust</strong> scores, you'll know — and so will your half-price
+      <strong>Rusty's Shake</strong> at The Milkshake Factory.
+    </p>
 
-    <div class="body-content">
-      <p class="intro">
-        Every time <strong>Bryan Rust</strong> scores a goal, we&rsquo;ll email you
-        so you can grab a half-price <strong>Rusty&rsquo;s Shake</strong>
-        at The Milkshake Factory. &#x1F964;
-      </p>
+    <form id="subscribe-form" novalidate>
+      <div class="form-group">
+        <label for="name-input">Your name</label>
+        <input type="text" id="name-input" name="name"
+               placeholder="Sidney" required
+               maxlength="100" autocomplete="given-name">
+      </div>
 
-      <form id="subscribe-form" novalidate>
-        <div class="form-group">
-          <label for="name-input">Your Name</label>
-          <input type="text" id="name-input" name="name"
-                 placeholder="e.g. Sidney" required
-                 maxlength="100" autocomplete="given-name">
-        </div>
+      <div class="form-group">
+        <label for="email-input">Email address</label>
+        <input type="email" id="email-input" name="email"
+               placeholder="you@example.com" required
+               maxlength="254" autocomplete="email">
+      </div>
 
-        <div class="form-group">
-          <label for="email-input">Email Address</label>
-          <input type="email" id="email-input" name="email"
-                 placeholder="you@example.com" required
-                 maxlength="254" autocomplete="email">
-        </div>
+      <button type="submit" class="submit-btn" id="submit-btn">
+        Subscribe to goal alerts
+      </button>
 
-        <button type="submit" class="submit-btn" id="submit-btn">
-          &#x1F514; Subscribe to Goal Alerts
-        </button>
+      <div class="message" id="message" role="alert" aria-live="polite"></div>
+    </form>
 
-        <div class="message" id="message" role="alert" aria-live="polite"></div>
-      </form>
-    </div>
-
-    <div class="footer">
-      <p>
-        We&rsquo;ll send a confirmation email to verify your address.
-        <br>No spam, ever. Unsubscribe anytime.
-      </p>
-    </div>
+    <p class="foot">
+      We'll send a confirmation email to verify your address.<br>
+      No spam, ever. Unsubscribe anytime.
+    </p>
   </div>
 
   <script>
     (function () {
       'use strict';
 
-      // ── CONFIGURE: Set this to your API Gateway URL after first deploy ──
+      // ── API configuration ──────────────────────────────────────
       var API_URL = 'https://6484tw3sc9.execute-api.us-east-1.amazonaws.com';
-      // Example: 'https://abc123.execute-api.us-east-1.amazonaws.com'
 
       var form = document.getElementById('subscribe-form');
       var nameInput = document.getElementById('name-input');
@@ -273,7 +332,6 @@
       var submitBtn = document.getElementById('submit-btn');
       var messageEl = document.getElementById('message');
 
-      // Simple email validation (matches server-side pattern)
       var EMAIL_RE = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
       function showMessage(type, text) {
@@ -293,7 +351,6 @@
         var name = nameInput.value.trim();
         var email = emailInput.value.trim().toLowerCase();
 
-        // Client-side validation
         if (!name || name.length > 100) {
           showMessage('error', 'Please enter your name (max 100 characters).');
           nameInput.focus();
@@ -311,9 +368,8 @@
           return;
         }
 
-        // Disable button during request
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Subscribing\u2026';
+        submitBtn.textContent = 'Subscribing…';
 
         fetch(API_URL.replace(/\/+$/, '') + '/subscribe', {
           method: 'POST',
@@ -334,9 +390,40 @@
           })
           .finally(function () {
             submitBtn.disabled = false;
-            submitBtn.textContent = '\uD83D\uDD14 Subscribe to Goal Alerts';
+            submitBtn.textContent = 'Subscribe to goal alerts';
           });
       });
+
+      // ── Theme toggle ───────────────────────────────────────────
+      var STORAGE_KEY = 'rusty.theme';
+      var html = document.documentElement;
+
+      function applyTheme(mode) {
+        if (mode === 'system') {
+          html.removeAttribute('data-theme');
+        } else {
+          html.setAttribute('data-theme', mode);
+        }
+        var buttons = document.querySelectorAll('[data-theme-set]');
+        for (var i = 0; i < buttons.length; i++) {
+          buttons[i].classList.toggle('on', buttons[i].getAttribute('data-theme-set') === mode);
+        }
+      }
+
+      var saved;
+      try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) { saved = null; }
+      if (saved !== 'light' && saved !== 'dark' && saved !== 'system') saved = 'system';
+
+      var togglerButtons = document.querySelectorAll('[data-theme-set]');
+      for (var j = 0; j < togglerButtons.length; j++) {
+        togglerButtons[j].addEventListener('click', function (e) {
+          var mode = e.currentTarget.getAttribute('data-theme-set');
+          try { localStorage.setItem(STORAGE_KEY, mode); } catch (err) { /* ignore */ }
+          applyTheme(mode);
+        });
+      }
+
+      applyTheme(saved);
     })();
   </script>
 </body>

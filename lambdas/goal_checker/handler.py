@@ -68,15 +68,35 @@ def lambda_handler(event, context):
     """Main entry point — triggered by EventBridge daily."""
     logger.info(f"Goal Checker invoked. Source: {event.get('source', 'manual')}")
 
-    yesterday = _get_yesterday_et()
-    logger.info(f"Checking for goals on: {yesterday.isoformat()}")
+    # ── TEST-MODE OVERRIDE ────────────────────────────────────────────
+    # If the invoke event contains "mock_game", skip the NHL API call
+    # and use the provided data instead. Optional "bypass_idempotency"
+    # flag also allows re-sending for a game_date we've processed before.
+    # Required keys in mock_game: game_date (YYYY-MM-DD), goals, opponent.
+    # Optional: game_id, assists, game_type.
+    mock_game = event.get("mock_game")
+    if mock_game:
+        logger.warning(f"TEST MODE: using mock game data: {mock_game}")
+        game_info = {
+            "game_date": mock_game["game_date"],
+            "game_id": mock_game.get("game_id", 0),
+            "goals": int(mock_game.get("goals", 0)),
+            "assists": int(mock_game.get("assists", 0)),
+            "opponent": mock_game.get("opponent", "TEST"),
+            "game_type": mock_game.get("game_type", "regular_season"),
+        }
+        bypass_idempotency = bool(event.get("bypass_idempotency", False))
+    else:
+        bypass_idempotency = False
+        yesterday = _get_yesterday_et()
+        logger.info(f"Checking for goals on: {yesterday.isoformat()}")
 
-    # 1. Check if Rust played and scored yesterday
-    game_info = check_goals_for_date(
-        player_id=PLAYER_ID,
-        target_date=yesterday,
-        include_playoffs=INCLUDE_PLAYOFFS,
-    )
+        # 1. Check if Rust played and scored yesterday
+        game_info = check_goals_for_date(
+            player_id=PLAYER_ID,
+            target_date=yesterday,
+            include_playoffs=INCLUDE_PLAYOFFS,
+        )
 
     if game_info is None:
         logger.info("No game found yesterday. Nothing to do.")
@@ -94,7 +114,7 @@ def lambda_handler(event, context):
         return {"statusCode": 200, "body": f"No goals vs {opponent}."}
 
     # 2. Idempotency check — did we already send for this game?
-    if _already_sent(game_info["game_date"]):
+    if not bypass_idempotency and _already_sent(game_info["game_date"]):
         logger.warning(
             f"Emails already sent for {game_info['game_date']}. Skipping."
         )

@@ -20,6 +20,9 @@ cdk.out/
 .DS_Store
 Thumbs.db
 
+# Claude Code tooling (worktrees, session state)
+.claude/
+
 # Node (for frontend, Phase 4)
 node_modules/
 dist/

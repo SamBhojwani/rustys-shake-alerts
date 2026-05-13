@@ -23,6 +23,9 @@ Thumbs.db
 # Claude Code tooling (worktrees, session state)
 .claude/
 
+# Local-only design preview mockups
+design-mockups/
+
 # Node (for frontend, Phase 4)
 node_modules/
 dist/

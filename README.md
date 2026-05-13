@@ -4,6 +4,32 @@ A serverless app that watches Pittsburgh Penguins forward **Bryan Rust**. Every 
 
 **Live demo:** [admin dashboard](https://dysdanp2wbnf9.cloudfront.net) · subscribe form runs locally for now (see below)
 
+![Admin dashboard](docs/screenshots/admin-dashboard-light.png)
+
+---
+
+## A look at the UI
+
+Built with React + Vite for the admin dashboard and vanilla HTML for the public subscribe page. Both share a single design language with a serif italic display headline, Pens-gold accents, and a sun/moon switch that respects the user's OS preference on first visit and persists their choice from then on.
+
+### Subscribe page (public)
+
+| Light | Dark |
+| :---: | :---: |
+| ![](docs/screenshots/subscribe-light.png) | ![](docs/screenshots/subscribe-dark.png) |
+
+### Admin login
+
+| Light | Dark |
+| :---: | :---: |
+| ![](docs/screenshots/admin-login-light.png) | ![](docs/screenshots/admin-login-dark.png) |
+
+### Admin dashboard
+
+| Light | Dark |
+| :---: | :---: |
+| ![](docs/screenshots/admin-dashboard-light.png) | ![](docs/screenshots/admin-dashboard-dark.png) |
+
 ---
 
 ## What it does, in plain English

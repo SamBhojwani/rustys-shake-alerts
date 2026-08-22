@@ -1,4 +1,6 @@
-# Rusty's Shake — Goal Alert System 🏒🥤
+<p align="center">
+  <img src="docs/banner.png" alt="Rusty's Shake — goal alerts, serverless" width="100%">
+</p>
 
 A serverless app that watches Pittsburgh Penguins forward **Bryan Rust**. Every time he scores a goal in a game, the next morning everyone on the subscriber list gets an email letting them know they can grab a half-price **"Rusty's Shake"** at The Milkshake Factory that day.
 
